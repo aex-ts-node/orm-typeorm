@@ -1,34 +1,101 @@
-[![Build Status](https://travis-ci.org/{{github-user-name}}/{{github-app-name}}.svg?branch=master)](https://travis-ci.org/{{github-user-name}}/{{github-app-name}}.svg?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/{{github-user-name}}/{{github-app-name}}/badge.svg?branch=master)](https://coveralls.io/github/{{github-user-name}}/{{github-app-name}}?branch=master)
+[![Build Status](https://travis-ci.org/aex-ts-node/orm-typeorm.svg?branch=master)](https://travis-ci.org/aex-ts-node/orm-typeorm.svg?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/aex-ts-node/orm-typeorm/badge.svg?branch=master)](https://coveralls.io/github/aex-ts-node/orm-typeorm?branch=master)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-# Using this module in other modules
+# @aex/typeorm
 
-Here is a quick example of how this module can be used in other modules. The [TypeScript Module Resolution Logic](https://www.typescriptlang.org/docs/handbook/module-resolution.html) makes it quite easy. The file `src/index.ts` is a [barrel](https://basarat.gitbooks.io/typescript/content/docs/tips/barrel.html) that re-exports selected exports from other files. The _package.json_ file contains `main` attribute that points to the generated `lib/index.js` file and `typings` attribute that points to the generated `lib/index.d.ts` file.
+Aex middleware for typeorm.
 
-> If you are planning to have code in multiple files (which is quite natural for a NodeJS module) that users can import, make sure you update `src/index.ts` file appropriately.
+# Usage
 
-Now assuming you have published this amazing module to _npm_ with the name `my-amazing-lib`, and installed it in the module in which you need it -
+## Prepare models
 
-- To use the `Greeter` class in a TypeScript file -
+```sh
+# ./models
+├── Photo.ts
+└── User.ts
+```
+Photo.ts: 
+```ts
+import {BaseEntity, Column, Entity, PrimaryGeneratedColumn} from "typeorm";
+
+@Entity()
+export class Photo extends BaseEntity {
+
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    name: string;
+
+    @Column()
+    description: string;
+
+    @Column()
+    filename: string;
+
+    @Column()
+    views: number;
+
+    @Column()
+    isPublished: boolean;
+}
+```
+
+User.ts
+```ts
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+
+@Entity()
+export class User extends BaseEntity {
+
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  firstName: string;
+
+  @Column()
+  lastName: string;
+
+  @Column()
+  age: number;
+
+}
+```
+
+## Create a Aex middleware for typeorm
 
 ```ts
-import { Greeter } from "my-amazing-lib";
-
-const greeter = new Greeter("World!");
-greeter.greet();
+import { createTypeorm } from "@aex/typeorm";
+const options = {
+  database: path.resolve(__dirname, "./store/project.db"),
+  synchronize: true,
+  type: "sqlite"
+};
+const middleware = await createTypeorm("./models/", options);
 ```
 
-- To use the `Greeter` class in a JavaScript file -
+## Add the middleware to aex
 
-```js
-const Greeter = require('my-amazing-lib').Greeter;
-
-const greeter = new Greeter('World!');
-greeter.greet();
+```ts
+const aex = new Aex();
+aex.use(middleware);
 ```
 
-## Setting travis and coveralls badges
-1. Sign in to [travis](https://travis-ci.org/) and activate the build for your project.
-2. Sign in to [coveralls](https://coveralls.io/) and activate the build for your project.
-3. Replace {{github-user-name}}/{{github-app-name}} with your repo details like: "ospatil/generator-node-typescript".
+## Use typeorm in the subsequence middlewares
+
+```ts
+aex.use(async (_req: any, res, scope: any) => {
+  const { connection, models } = scope.outer.typeorm;
+  const User = models.User;
+  const user = new User();
+  user.age = 100;
+  user.firstName = "hello";
+  user.lastName = "world!";
+  await user.save();
+  console.log(user.id);
+  await connection.close();
+  res.end("ok");
+});
+```
