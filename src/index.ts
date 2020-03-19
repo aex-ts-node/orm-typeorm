@@ -1,10 +1,9 @@
 import { Loader } from "@aex/loader";
 import * as fs from "fs";
 import * as path from "path";
-import { createConnection } from 'typeorm';
+import { createConnection } from "typeorm";
 
-
-export async function createTypeorm(loadDir: string, options: any) {
+export async function initTypeorm(loadDir: string, options: any) {
   let dir = loadDir;
   if (!path.isAbsolute(dir)) {
     const dirs = Loader.getDirs();
@@ -22,11 +21,14 @@ export async function createTypeorm(loadDir: string, options: any) {
   }
   options.entities = entities;
   const connection = await createConnection(options);
-  // tslint:disable-next-line:variable-name
-  return async (_req: any, _res: any, scope: any) => {
-    scope.outer.typeorm = {
-      connection,
-      models
-    };
+  return {
+    connection,
+    models
   };
-};
+}
+
+export async function createTypeorm(loadDir: string, options: any) {
+  return async (_req: any, _res: any, scope: any) => {
+    scope.outer.typeorm = await initTypeorm(loadDir, options);
+  };
+}

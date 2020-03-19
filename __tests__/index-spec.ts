@@ -1,7 +1,7 @@
 
 import { Aex } from "@aex/core";
 import * as path from "path";
-import { createTypeorm } from '../src/index';
+import { createTypeorm, initTypeorm } from '../src/index';
 import { responseText } from "./util/test";
 
 test('Should connect to sqlite3', async () => {
@@ -74,7 +74,7 @@ test('Should throw Exception when no directory found!', async () => {
   }
   let catched = false;
   try {
-    await createTypeorm("../models/", options);
+    await initTypeorm("../models/", options);
   } catch (e) {
     catched = true;
   }
